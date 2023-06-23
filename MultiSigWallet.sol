@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 contract MultisigContract {
     address private owner;
     uint private signatureThreshold;
-    uint private countApprovers;
     mapping (address => bool) private approvers;
     mapping (address => uint) private lastTransferTime;
     uint private constant transferLockTime = 1 days; // Período de bloqueo de transferencias (1 día en este ejemplo)
@@ -60,19 +59,27 @@ contract MultisigContract {
     }
     
         function changeSignatureThreshold(uint _newThreshold) external onlyOwner {
-        require(_newThreshold > 0 && _newThreshold <= countApprovers, "Invalid signature threshold.");
+        require(_newThreshold > 0 && _newThreshold <= countApprovers(), "Invalid signature threshold.");
         signatureThreshold = _newThreshold;
     }
     
     function addApprover(address _approver) external onlyOwner {
         approvers[_approver] = true;
-        countApprovers++;
     }
     
     function removeApprover(address _approver) external onlyOwner {
-        require(countApprovers > signatureThreshold, "Cannot remove approver. Signature threshold will be violated.");
+        require(countApprovers() > signatureThreshold, "Cannot remove approver. Signature threshold will be violated.");
         require(_approver != owner, "Cannot remove contract owner.");
         approvers[_approver] = false;
-        countApprovers--;
     }
+    
+function countApprovers() public view returns (uint) {
+        uint count = 0;
+        for (uint i = 0; i < approvers.length; i++) {
+            if (approvers[i]) {
+                count++;
+            }
+        }
+        return count;
+}
 }
